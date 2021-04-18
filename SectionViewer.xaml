@@ -1,0 +1,64 @@
+﻿<Window x:Class="LTracker.SectionViewer"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LTracker"
+        mc:Ignorable="d"
+        Title="Section Viewer" Height="320.523" Width="269.417">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Margin" Value="8,3,8,3" />
+        </Style>
+    </Window.Resources>
+    <Window.CommandBindings>
+        <CommandBinding Command="ApplicationCommands.Open" CanExecute="Command_CanAlwaysExecute" Executed="CommandOpen_Executed" />
+        <CommandBinding Command="ApplicationCommands.Save" CanExecute="Command_CanAlwaysExecute" Executed="CommandSave_Executed" />
+    </Window.CommandBindings>
+    
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="3*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Menu Grid.ColumnSpan="2">
+            <MenuItem Command="ApplicationCommands.Open" Header="_Open" />
+            <MenuItem Command="ApplicationCommands.Save" Header="_Save" />
+        </Menu>
+        <StackPanel Grid.Column="0" Grid.Row="1" Orientation="Vertical">
+            <TextBlock Text="Name:" />
+            <TextBlock Text="Tempo:" />
+            <TextBlock Text="Bars:" />
+            <TextBlock Text="Groove:" />
+            <TextBlock Text="Bar Ticks:" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Grid.Row="1" Orientation="Vertical">
+            <TextBox Text="{Binding section_current.name}" MaxLength="15" />
+            <TextBox Text="{Binding section_current.tempo}" />
+            <!-- Binding.ValidationRules -->
+            <TextBox Text="{Binding section_current.bars}" />
+            <TextBox Text="{Binding section_current.bar_ticks}" />
+            <ComboBox SelectedIndex="{Binding section_current.groove}">
+                <ComboBoxItem>12</ComboBoxItem>
+                <ComboBoxItem>37</ComboBoxItem>
+                <ComboBoxItem>62</ComboBoxItem>
+                <ComboBoxItem>87</ComboBoxItem>
+            </ComboBox>
+        </StackPanel>
+
+        <StackPanel Grid.Column="0" Grid.Row="2">
+            <TextBlock Text="DLS Ref:" />
+            <TextBlock Text="Chords and Misc." TextWrapping="Wrap" />
+        </StackPanel>
+        
+        <StackPanel Grid.Column="1" Grid.Row="2">
+            <TextBox Text="{Binding section_current.style_name}" />
+            <TextBlock Text="Not implemented yet" Margin="2,3"/>
+        </StackPanel>
+    </Grid>
+</Window>

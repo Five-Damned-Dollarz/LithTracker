@@ -1,0 +1,83 @@
+﻿<Window x:Class="LTracker.InstrumentsViewer"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LTracker"
+        mc:Ignorable="d"
+        Title="InstrumentsViewer" Height="480" Width="640">
+    <Window.Resources>
+        <local:NoteValueConverter x:Key="NoteValueConv" />
+        
+        <DataTemplate DataType="local:Range">
+            <StackPanel Orientation="Horizontal">
+                <TextBox Text="{Binding range.start}" />
+                <TextBox>/</TextBox>
+                <TextBox Text="{Binding range.end}" />
+            </StackPanel>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Window.CommandBindings>
+        <CommandBinding Command="ApplicationCommands.Open" CanExecute="Command_CanAlwaysExecute" Executed="CommandOpen_Executed" />
+    </Window.CommandBindings>
+
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Command="ApplicationCommands.Open" Header="_Open" />
+            <!--<MenuItem Command="ApplicationCommands.Save" Header="_Save" />-->
+        </Menu>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="3" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <TextBlock>List of open files?</TextBlock>
+            </StackPanel>
+
+            <GridSplitter Grid.Column="1" Width="3" HorizontalAlignment="Stretch" />
+
+            <ItemsControl Grid.Column="2" x:Name="InstrumentList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Vertical">
+                            <TextBox Text="{Binding name}" />
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Add" Click="AddRegion" />
+                            </StackPanel>
+                            <ItemsControl ItemsSource="{Binding regions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Vertical">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock>Base Note:</TextBlock>
+                                                <TextBox Text="{Binding base_note}" />
+                                                <Button Content="Delete" Click="DeleteRegion" />
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock>Range:</TextBlock>
+                                                <TextBox Text="{Binding range.start}" />
+                                                <TextBlock>/</TextBlock>
+                                                <TextBox Text="{Binding range.end}" />
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock>Velocity:</TextBlock>
+                                                <TextBox Text="{Binding velocity.start}" />
+                                                <TextBlock>/</TextBlock>
+                                                <TextBox Text="{Binding velocity.end}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+
+    </DockPanel>
+</Window>

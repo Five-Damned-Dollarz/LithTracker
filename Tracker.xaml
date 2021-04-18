@@ -1,0 +1,88 @@
+﻿<Window x:Class="LTracker.Tracker"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LTracker"
+        mc:Ignorable="d"
+        Title="Tracker" Height="Auto" Width="800">
+    <Window.CommandBindings>
+        <CommandBinding Command="ApplicationCommands.Save" Executed="CommandSave_Executed" CanExecute="Command_CanAlwaysExecute" />
+    </Window.CommandBindings>
+    <Window.Resources>
+        <local:NoteValueConverter x:Key="NoteValueConv" />
+
+        <DataTemplate x:Key="KeyPressTemplate" DataType="x:Key">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal">
+                    <TextBlock Text="Note: " />
+                    <TextBox Text="{Binding note}" />
+                    <TextBlock Text="{Binding note, Converter={StaticResource NoteValueConv}}" />
+                </StackPanel>
+
+                <Button Grid.Column="2" Content="Delete" Click="DeleteKey" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Start:" />
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding start_ticks}" />
+                <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding start_random}" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Length:" />
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding length_ticks}" />
+                <TextBox Grid.Row="2" Grid.Column="2" Text="{Binding length_random}" />
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Velocity:" />
+                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding velocity}" />
+                <TextBox Grid.Row="3" Grid.Column="2" Text="{Binding velocity_random}" />
+            </Grid>
+        </DataTemplate>
+        
+        <DataTemplate x:Key="NoteDivision" DataType="x:NoteDivision">
+            <StackPanel Orientation="Vertical">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding division_id}"></TextBlock>
+                    <Button Content="Add" Click="AddNewKey" />
+                </StackPanel>
+                <ListView ItemsSource="{Binding note_presses}" ItemTemplate="{StaticResource KeyPressTemplate}"></ListView>
+            </StackPanel>
+        </DataTemplate>
+    </Window.Resources>
+
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem DockPanel.Dock="Top" Header="_Save" Command="ApplicationCommands.Save" />
+        </Menu>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+            <TextBlock>Time Signature:</TextBlock>
+            <TextBox x:Name="BeatCount" Text="{Binding beat_count}" />
+            <TextBlock>/</TextBlock>
+            <TextBox Text="{Binding note_division}"></TextBox>
+            <TextBlock>Bars:</TextBlock>
+            <TextBox x:Name="BarCount" Text="{Binding bar_count}" />
+            <TextBlock>Tempo:</TextBlock>
+            <TextBox x:Name="Tempo" Text="{Binding tempo}" />
+            <TextBlock>Beat Ticks:</TextBlock>
+            <TextBox x:Name="BeatTicks" Text="{Binding beat_ticks}" />
+        </StackPanel>
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <ItemsControl HorizontalContentAlignment="Left" x:Name="NoteLane" ItemTemplate="{StaticResource NoteDivision}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</Window>
