@@ -5,15 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:LTracker"
         mc:Ignorable="d"
-        Title="InstrumentsViewer" Height="480" Width="640">
+        Title="Instruments Viewer" Height="480" Width="640">
     <Window.Resources>
         <local:NoteValueConverter x:Key="NoteValueConv" />
         
         <DataTemplate DataType="local:Range">
             <StackPanel Orientation="Horizontal">
-                <TextBox Text="{Binding range.start}" />
+                <TextBox Text="{Binding key_range.start}" />
                 <TextBox>/</TextBox>
-                <TextBox Text="{Binding range.end}" />
+                <TextBox Text="{Binding key_range.end}" />
             </StackPanel>
         </DataTemplate>
     </Window.Resources>
@@ -24,59 +24,80 @@
 
     <DockPanel>
         <Menu DockPanel.Dock="Top">
-            <MenuItem Command="ApplicationCommands.Open" Header="_Open" />
-            <!--<MenuItem Command="ApplicationCommands.Save" Header="_Save" />-->
+            <MenuItem Header="_File">
+                <MenuItem Command="ApplicationCommands.Open" Header="_Open" />
+                <!--<MenuItem Command="ApplicationCommands.Save" Header="_Save" />-->
+            </MenuItem>
+            <MenuItem Header="Instruments">
+                <MenuItem Header="Add" />
+                <MenuItem Header="Remove" />
+            </MenuItem>
         </Menu>
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="3" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="3*" />
             </Grid.ColumnDefinitions>
 
-            <StackPanel Grid.Column="0">
-                <TextBlock>List of open files?</TextBlock>
-            </StackPanel>
+            <TreeView Grid.Column="0" x:Name="CollectionList">
+                <TreeView.Resources>
+                    <HierarchicalDataTemplate DataType="{x:Type local:DLS}" ItemsSource="{Binding instruments}">
+                        <TextBlock Text="{Binding name}" />
+                    </HierarchicalDataTemplate>
+
+                    <HierarchicalDataTemplate DataType="{x:Type local:Instrument}" ItemsSource="{Binding regions}">
+                        <TextBlock Text="{Binding name}" />
+                    </HierarchicalDataTemplate>
+
+                    <HierarchicalDataTemplate DataType="{x:Type local:Region}">
+                        <TextBlock Text="{Binding key_range}" />
+                    </HierarchicalDataTemplate>
+                </TreeView.Resources>
+            </TreeView>
 
             <GridSplitter Grid.Column="1" Width="3" HorizontalAlignment="Stretch" />
 
-            <ItemsControl Grid.Column="2" x:Name="InstrumentList">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Orientation="Vertical">
-                            <TextBox Text="{Binding name}" />
-                            <StackPanel Orientation="Horizontal">
-                                <Button Content="Add" Click="AddRegion" />
-                            </StackPanel>
-                            <ItemsControl ItemsSource="{Binding regions}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Vertical">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock>Base Note:</TextBlock>
-                                                <TextBox Text="{Binding base_note}" />
-                                                <Button Content="Delete" Click="DeleteRegion" />
-                                            </StackPanel>
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock>Range:</TextBlock>
-                                                <TextBox Text="{Binding range.start}" />
-                                                <TextBlock>/</TextBlock>
-                                                <TextBox Text="{Binding range.end}" />
-                                            </StackPanel>
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock>Velocity:</TextBlock>
-                                                <TextBox Text="{Binding velocity.start}" />
-                                                <TextBlock>/</TextBlock>
-                                                <TextBox Text="{Binding velocity.end}" />
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <DockPanel Grid.Column="2">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                    <TextBox Text="{Binding SelectedItem.name, ElementName=CollectionList}" />
+                    <TextBox Text="Bank" />
+                    <TextBox Text="{Binding SelectedItem.patch_id, ElementName=CollectionList}" />
+                </StackPanel>
+
+                <StackPanel Orientation="Vertical" DataContext="{Binding SelectedItem, ElementName=CollectionList}">
+                    <TextBox Text="{Binding name}" />
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Add" Click="AddRegion" />
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding regions}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <WrapPanel Orientation="Horizontal">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock>Base Note:</TextBlock>
+                                        <TextBox Text="{Binding base_note}" />
+                                        <TextBlock Text="{Binding base_note, Converter={StaticResource NoteValueConv}}"></TextBlock>
+                                        <Button Content="Delete" Click="DeleteRegion" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock>Range:</TextBlock>
+                                        <TextBox Text="{Binding key_range.start}" />
+                                        <TextBlock>/</TextBlock>
+                                        <TextBox Text="{Binding key_range.end}" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock>Velocity:</TextBlock>
+                                        <TextBox Text="{Binding velocity.start}" />
+                                        <TextBlock>/</TextBlock>
+                                        <TextBox Text="{Binding velocity.end}" />
+                                    </StackPanel>
+                                </WrapPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </DockPanel>
         </Grid>
 
     </DockPanel>

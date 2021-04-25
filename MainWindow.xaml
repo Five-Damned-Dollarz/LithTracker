@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:LTracker"
         xmlns:Properties="clr-namespace:LTracker.Properties" x:Class="LTracker.MainWindow"
         mc:Ignorable="d"
-        Title="LT[1]racker" Height="450" Width="800">
+        Title="LithTracker" Height="450" Width="800">
 
     <Window.CommandBindings>
         <CommandBinding Command="ApplicationCommands.New" CanExecute="OpenCommand_CanExecute" />

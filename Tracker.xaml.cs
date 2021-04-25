@@ -264,14 +264,15 @@ namespace LTracker
 		}
 	}
 
-	public class NoteValueConverter : IValueConverter
+	public class NoteValueConverter : IValueConverter // this should be calls to a global utility conversion, useful in many places
 	{
 		public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
 		{
-			if (value is byte)
+			if (value is IConvertible)
 			{
-				int temp_value = (byte)value / 12;
-				Notes note = (Notes)((byte)value % 12);
+				int i=((IConvertible)value).ToInt32(null);
+				int temp_value = (int)i / 12;
+				Notes note = (Notes)((int)i % 12);
 
 				return note.ToString() + temp_value.ToString();
 			}

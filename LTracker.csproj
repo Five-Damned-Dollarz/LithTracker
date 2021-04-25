@@ -71,6 +71,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="BinaryReaderExtensions.cs" />
+    <Compile Include="DLSFile.cs" />
     <Compile Include="InstrumentsViewer.xaml.cs">
       <DependentUpon>InstrumentsViewer.xaml</DependentUpon>
     </Compile>
