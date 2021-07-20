@@ -1,0 +1,279 @@
+typedef char ID[4];
+
+void Pad(const uint size)
+{
+	if ((size & 1) && (FTell()<FileSize()))
+		ubyte padding;
+}
+
+struct COLH_CHUNK
+{
+	uint instrument_count;
+};
+
+struct VERS_CHUNK
+{
+	ushort version_major;
+	ushort version_minor;
+	ushort version_patch;
+	ushort version_build;
+};
+
+struct MSYN_CHUNK
+{
+	uint synth_version; // might be 2 shorts for major/minor
+};
+
+struct PTBL_CHUNK
+{
+	uint table_size;
+	uint cue_count;
+
+	uint cue_offsets[cue_count];
+};
+
+struct INSH_CHUNK
+{
+	uint region_count;
+
+	struct {
+		uint bank;
+		uint instrument_id;
+	} locale;
+};
+
+struct RGNH_CHUNK
+{
+	struct Range
+	{
+		ushort low;
+		ushort high;
+	};
+	Range key_range;
+	Range velocity_range;
+	ushort flags;
+	ushort key_group;
+};
+
+struct WSMP_CHUNK
+{
+	uint size;
+	ushort base_note; // sample's root note
+	short fine_tune;
+	int attenuation;
+	uint flags;
+	uint loops_count;
+
+	struct Loop
+	{
+		uint size;
+		uint loop_type;
+		uint loop_start;
+		uint loop_length;
+	} loops[loops_count];
+};
+
+struct WLNK_CHUNK
+{
+	ushort flags;
+	ushort phase_group;
+	uint channel_id;
+	uint table_index;
+};
+
+struct ART1_CHUNK
+{
+	uint size;
+	uint block_count;
+
+	struct Block
+	{
+		enum<ushort> {
+			// Generic Sources
+			CONN_SRC_NONE=0x0, // No Source
+			CONN_SRC_LFO=0x1, // Low Frequency Oscillator
+			CONN_SRC_KEYONVELOCITY=0x2, // Key on Velocity
+			CONN_SRC_KEYNUMBER=0x3, // Key Number
+			CONN_SRC_EG1=0x4, // Envelope Generator 1
+			CONN_SRC_EG2=0x5, // Envelope Generator 2
+			CONN_SRC_PITCHWHEEL=0x6, // Pitch Wheel
+			// MIDI Sources
+			CONN_SRC_CC1=0x81, // Modulation Wheel
+			CONN_SRC_CC7=0x87, // Channel Volume
+			CONN_SRC_CC10=0x8A, // Pan
+			CONN_SRC_CC11=0x8B, // Expression
+			CONN_SRC_RPN0=0x100, // RPN0 - Pitch Bend Range
+			CONN_SRC_RPN1=0x101, // RPN1 - Fine Tune
+			CONN_SRC_RPN2=0x102 // RPN1 - Coarse Tune
+		} source;
+
+		ushort control;
+
+		enum<ushort> {
+			// Generic Destinations
+			CONN_DST_NONE=0x0, // No Destination
+			CONN_DST_ATTENUATION=0x1, // Attenuation
+			CONN_DST_PAN=0x4, // Pan
+			CONN_DST_PITCH=0x3, // Pitch
+			// LFO Destinations
+			CONN_DST_LFO_FREQUENCY=0x104, // LFO Frequency
+			CONN_DST_LFO_STARTDELAY=0x105, // LFO Start Delay Time
+			// EG1 Destinations
+			CONN_DST_EG1_ATTACKTIME=0x206, // EG1 Attack Time
+			CONN_DST_EG1_DECAYTIME=0x207, // EG1 Decay Time
+			CONN_DST_EG1_SUSTAINLEVEL=0x20A, // EG1 Sustain Level
+			CONN_DST_EG1_RELEASETIME=0x209, // EG1 Release Time
+			// EG2 Destinations
+			CONN_DST_EG2_ATTACKTIME=0x30A, // EG2 Attack Time
+			CONN_DST_EG2_DECAYTIME=0x30B, // EG2 Decay Time
+			CONN_DST_EG2_SUSTAINLEVEL=0x30E, // EG2 Sustain Level
+			CONN_DST_EG2_RELEASETIME=0x30D // EG2 Release Time
+		} destination;
+
+		enum<ushort> {
+			CONN_TRN_NONE=0x0, // No Transform
+			CONN_TRN_CONCAVE=0x1 // Concave Transform
+		} transform;
+		int scale;
+	} blocks[block_count];
+};
+
+struct FMT_CHUNK
+{
+	enum<short> {
+		WAVE_FORMAT_UNKNOWN=0,
+		WAVE_FORMAT_PCM=1,
+		WAVE_FORMAT_ADPCM,
+		WAVE_FORMAT_IEEE_FLOAT
+	} format_tag;
+	short channel_count;
+	int samples_per_second;
+	int average_bytes_per_sec;
+	short block_align;
+
+	// PCM specific
+	short bits_per_sample;
+	short extra_size; // should be 0 if we don't need extension, count includes data above
+};
+
+struct DATA_CHUNK
+{
+	// seems Blood 2 uses 22khz 16 bit mono?
+};
+
+struct CHUNK
+{
+	ID id;
+	uint size;
+
+	local quad pos=FTell();
+
+	switch(id)
+	{
+		case "colh":
+			COLH_CHUNK colh;
+			break;
+		case "vers":
+			VERS_CHUNK vers;
+			break;
+		case "msyn":
+			MSYN_CHUNK msyn;
+			break;
+		case "ptbl":
+			PTBL_CHUNK ptbl;
+			break;
+
+		case "insh":
+			INSH_CHUNK insh;
+			break;
+		case "rgnh":
+			RGNH_CHUNK rgnh;
+			break;
+		case "wsmp":
+			WSMP_CHUNK wsmp;
+			break;
+		case "wlnk":
+			WLNK_CHUNK wlnk;
+			break;
+
+		case "INAM":
+			char name[];
+			break;
+
+		case "art1":
+			ART1_CHUNK art1;
+			break;
+
+		case "fmt ":
+			FMT_CHUNK fmt;
+			break;
+		//case "data":
+			//DATA_CHUNK data;
+			//break;
+
+		default:
+			ubyte data[size];
+			break;
+	}
+
+
+	if (FTell()-pos<size)
+		ubyte buffer[size-(FTell()-pos)];
+
+	Pad(size);
+};
+
+struct LIST_CHUNK;
+
+struct LIST_CHUNK
+{
+	ID id;
+	uint size;
+	local quad pos=FTell();
+	ID type;
+
+	local ID id_;
+	local uint size_;
+	while(FTell()-pos<size)
+	{
+		ReadBytes(id_, FTell(), 4);
+		size_=ReadUInt(FTell()+4);
+
+		if (FTell()-pos+size_>size)
+		{
+			Warning("Invalid chunk size!");
+			return -1;
+		}
+
+		switch(id_)
+		{
+			case "LIST":
+				LIST_CHUNK list;
+				break;
+			default:
+				CHUNK subchunk;
+				break;
+		}
+	}
+
+	Pad(size);
+};
+
+LittleEndian();
+
+local ID id;
+local uint size;
+while(FTell()<FileSize())
+{
+	ReadBytes(id, FTell(), 4);
+	size=ReadUInt(FTell()+4);
+
+	switch(id)
+	{
+		case "RIFF":
+			LIST_CHUNK list <open=true>;
+			break;
+		default:
+			return -1;
+	}
+}

@@ -1,0 +1,239 @@
+typedef char ID[4];
+
+void Pad(const uint size)
+{
+	if ((size & 1) && (FTell()<FileSize()))
+		ubyte padding;
+}
+
+local int ticks_per_bar=0;
+
+struct CHUNK
+{
+	ID id;
+	uint size;
+	ubyte data[size];
+
+	Pad(size);
+};
+
+struct STYL_CHUNK
+{
+	ID id;
+	uint size;
+
+	wchar_t name[16];
+	ushort note_upper;
+	ushort note_lower;
+	ushort ticks_per_division;
+	ushort ticks_per_beat;
+	ushort ticks_per_bar;
+	uint tempo;
+	GUID guid;
+	wchar_t category[16]; // imusic25.dll calls this "category"
+
+	Pad(size);
+};
+
+struct PREF_CHUNK
+{
+	ID id;
+	uint size;
+
+	ushort name_length;
+	wchar_t name[name_length/2];
+	wchar_t name_alt[];
+
+	Pad(size);
+};
+
+struct BAND_CHUNK
+{
+	char block_id_[4];
+	uint block_size;
+	wchar_t band_name[16];
+	ubyte unknown_1[8];
+	ubyte channel_ids[16]; // may not always be 16?
+
+	byte channel_volumes[16];
+	byte channel_pans[16];
+	byte channel_transpose[16];
+	ushort unknown_something; // unknown, possible flag for whether following data is used?
+	ubyte channel_banks[32]; // [(0),(1),n] not entirely sure how this works yet
+	ubyte channel_instruments[16]; // may not always be 16?
+
+	uint unknown_3[4];
+	char friendly_name[16]; // ref to DLS name
+
+	uint unknown_int; // unknown, possible flag for whether following data is used?
+	ubyte unknown_4[12]; // possibly [16]?
+
+	Pad(block_size);
+};
+
+struct PATT_CHUNK
+{
+	char block_id_[4];
+	uint block_size;
+
+	struct {
+	byte unknown_1[5];
+	/*
+	[4] = ???
+	*/
+	ushort time_sig_upper; // floor(3 * bar_count * (note_ticks / 192)) = time sig upper
+	byte unknown_2[5];
+	/*
+	[0] = ???
+	[1] & 1 = Fill embellishment
+	[1] & 2 = Intro embellishment
+	[1] & 4 = ???
+	[1] & 8,16 = chord rhythm pattern selection [0 = first beat/bar, 1 = every second beat/bar, 2 = every beat/bar]
+	[1] & 32 = Break embellishment
+	[1] & 64 = End embellishment
+	[1] & 128 = low/high limit bit - groove range LUT
+	[2] & 1,2,4 = groove range LUT index
+	[2] & 8 = ???
+	[3] & 2 = motif flag
+	[4] = ???
+	*/
+	ushort note_div; // compresses note starts relative to 64, eg. 32 halves all note starts
+	ushort beat_size; // in nths of a note
+	ushort note_ticks;
+	ushort bar_count;
+
+	wchar_t name[16];
+	ubyte unknown[42]; // suspect these bytes are "part properties" related
+	/*
+	[1-2] = right side chord/scale
+	[3-6] = C#2 - C4 chord/scale
+	[40] = auto-set invert boundary flags - track 1, high note related?
+	[41] = auto-set invert boundary flags - track 3, high note?
+	*/
+	} thing;
+
+	struct {
+		ubyte variations[32];
+	} variation_tables[16];
+
+	//ushort unknown;
+	byte unknown_something[19]; // something to do with chord/scale?
+	/*
+	[2] = chord track root note?
+	*/
+
+	/*
+	local double note_size=thing.note_ticks/thing.note_div; //thing.beat_size/8;
+	local int beats_per_bar=styl.block.ticks_per_bar/thing.note_ticks; //thing.time_sig_upper*64/thing.note_ticks;
+	local double note_ratio=thing.note_ticks/thing.note_div;
+	local int list_count=beats_per_bar*thing.bar_count*note_ratio;
+	*/
+
+	Pad(block_size);
+};
+
+struct CLIK_CHUNK
+{
+	char block_id[4];
+	uint block_size; // always 2?
+	ushort beat_number;
+};
+
+struct NOTE_CHUNK
+{
+	char note[4];
+	uint note_size;
+	ushort unknown_flags;
+	struct UnknownKey {
+		ubyte unknown; // flags?
+		ubyte instrument_id;
+		short note_start_ticks;
+		ushort variation_flags;
+		short pitch; // unknown, but setting any bit usually throws note off?
+		byte note;
+		ubyte velocity;
+		ubyte unknown;
+		ubyte unknown;
+		short note_length_ticks; // 192 = a whole beat?
+		byte start_random;
+		byte duration_random;
+		byte velocity_random;
+		ubyte unknown;
+	} keys[note_size/sizeof(UnknownKey)];
+
+	Pad(size);
+};
+
+struct LIST_CHUNK;
+
+struct LIST_CHUNK
+{
+	ID id;
+	uint size;
+	local quad pos=FTell();
+	ID type;
+
+	local ID id_;
+	local uint size_;
+	while(FTell()-pos<size)
+	{
+		ReadBytes(id_, FTell(), 4);
+		size_=ReadUInt(FTell()+4);
+
+		if (FTell()-pos+size_>size)
+		{
+			Warning("Invalid chunk size!");
+			return -1;
+		}
+
+		switch(id_)
+		{
+			case "LIST":
+			case "RIFF":
+				LIST_CHUNK list;
+				break;
+			case "styl":
+				STYL_CHUNK styl;
+				break;
+			case "pref":
+				PREF_CHUNK pref;
+				break;
+			case "band":
+				BAND_CHUNK band;
+				break;
+			case "patt":
+				PATT_CHUNK pattern;
+				break;
+			case "clik":
+				CLIK_CHUNK clik;
+				break;
+			case "note":
+				NOTE_CHUNK note;
+				break;
+			default:
+				CHUNK subchunk;
+				break;
+		}
+	}
+
+	Pad(size);
+};
+
+LittleEndian();
+
+local ID id;
+local DWORD size;
+while(FTell()<FileSize())
+{
+	ReadBytes(id, FTell(), 4);
+	size=ReadUInt(FTell()+4);
+
+	switch(id)
+	{
+		case "RIFF":
+			LIST_CHUNK list <open=true>;
+			break;
+		default:
+			return -1;
+	}
+}

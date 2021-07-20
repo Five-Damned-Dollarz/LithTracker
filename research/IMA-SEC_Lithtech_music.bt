@@ -1,0 +1,278 @@
+typedef char ID[4];
+
+void Pad(const uint size)
+{
+	if ((size & 1) && (FTell()<FileSize()))
+		ubyte padding;
+}
+
+struct CHUNK
+{
+	ID id;
+	uint size;
+	ubyte data[size];
+
+	Pad(size);
+};
+
+struct SECN_CHUNK
+{
+	ID id;
+	uint size;
+
+	ubyte unknown; // some sort of flags?
+	ubyte unknown; // appears to increment by a constant in consecutively named files
+	ubyte unknown;
+	ubyte unknown;
+
+	wchar_t unicode_name[16];
+
+	ushort tempo;
+	byte unknown_1[2];
+	ushort bar_count;
+	ushort bar_ticks; // 1 = ~2.605ms?
+
+	ubyte unknown_2[12];
+	/*
+	[0] = time sig upper?
+	[8] = time sig lower?
+	*/
+	GUID style_guid;
+
+	ubyte unknown_3[16]; // maybe this is author name?
+	wchar_t description[16];
+
+	//uint data[(size-sizeof(unicode_name)-4)/4];
+
+	Pad(size);
+};
+
+struct SCUI_CHUNK
+{
+	ID id;
+	uint size;
+
+	struct {
+		//uint length;
+		ushort unknown[7];
+		/*
+		[0] = ticks per bar? { 572 }
+		[1] = some sort of section sequence id? { 0/24/32/48/56/64/72/80/88/96/112/120/128/144/160/168/184/192/208 }
+		[2] = 0/32/64/96/120/128/160/192/224/256/288
+		[3] = 22/30/46/62
+		[4] = 30
+		[5] = 3
+		[6] = ticks per bar? { 1792 }
+		*/
+	} block;
+
+	ubyte pad[size-sizeof(block)];
+
+	Pad(size);
+};
+
+struct SREF_CHUNK
+{
+	ID id;
+	uint size;
+
+	wchar_t sty_ref_name[size/2];
+
+	Pad(size);
+};
+
+struct PRNM_CHUNK
+{
+	ID id;
+	uint size;
+
+	wchar_t sty_ref_name[]; // size/2
+
+	Pad(size);
+};
+
+struct BAND_CHUNK
+{
+	char block_id_[4];
+	uint block_size;
+	wchar_t band_name[16];
+	ubyte unknown_1[8];
+	ubyte channel_ids[16]; // may not always be 16?
+
+	byte channel_volumes[16];
+	byte channel_pans[16];
+	byte channel_transpose[16];
+	ushort unknown_something; // unknown, possible flag for whether following data is used?
+	ubyte channel_banks[32]; // [(0),(1),n] not entirely sure how this works yet
+	ubyte channel_instruments[16]; // may not always be 16?
+
+	uint unknown_3[4];
+	char friendly_name[16]; // ref to DLS name
+
+	uint unknown_int; // unknown, possible flag for whether following data is used?
+	ubyte unknown_4[12]; // possibly [16]?
+
+	Pad(size);
+};
+
+struct CHRD_CHUNK
+{
+	ID id;
+	uint size;
+	//ubyte data[size];
+
+	ushort count;
+	wchar_t name[16];
+	uint unknown;
+
+	struct {
+		ubyte chord_bitfield;
+		ushort chord_bitfield;
+		ubyte unknown;
+		ushort key_bitfield; // C + 8 notes in the key
+		ubyte second_key_add; // starts at E?
+		//
+		ubyte unknown_[13];
+		/*
+		[1-4] = lock key bitfield?
+		[5] = root note
+		*/
+	} blocks[4];
+
+	ubyte unknown;
+
+	Pad(size);
+};
+
+struct CMND_CHUNK
+{
+	ID id;
+	uint size;
+
+	ushort cmd_size; // maybe?
+	ushort unknown;
+	byte unknown; // if this!=0 groove value = none
+	byte unknown;
+	ushort flags;
+	/*
+	Low byte:
+	{1} = fill flag
+	{2} = intro flag
+	{4} = ???
+	{8} = ???
+	{16} = ???
+	{32} = break flag
+	{64} = end flag
+
+	Groove base value, range is non-deterministic when loaded in DirectMusic Producer 5.3:
+	{128} = groove 12
+
+	High byte:
+	{1} = groove 37
+	{2} = groove 62
+	{4} = groove 87
+	{8} = ???
+	{16} = ???
+	{64} = ???
+	{128} = ???
+	*/
+	ushort unknown;
+
+	Pad(size);
+};
+
+struct MUTE_CHUNK
+{
+	ID id;
+	uint size;
+
+	ushort unknown_count;
+
+	struct Mute {
+		ubyte unknown[16];
+	} blocks[(size-2)/sizeof(Mute)];
+
+	//ubyte unknown[size-sizeof(blocks)-2];
+
+	Pad(size);
+};
+
+struct LIST_CHUNK;
+
+struct LIST_CHUNK
+{
+	ID id;
+	uint size;
+	local quad pos=FTell();
+	ID type;
+
+	local ID id_;
+	local uint size_;
+	while(FTell()-pos<size)
+	{
+		ReadBytes(id_, FTell(), 4);
+		size_=ReadUInt(FTell()+4);
+
+		if (FTell()-pos+size_>size)
+				{
+			Warning("Invalid chunk size!");
+			return -1;
+		}
+
+		switch(id_)
+		{
+			case "LIST":
+			case "RIFF":
+				LIST_CHUNK list;
+				break;
+			case "secn":
+				SECN_CHUNK secn;
+				break;
+			case "scui":
+				SCUI_CHUNK scui;
+				break;
+			case "sref":
+				SREF_CHUNK sref;
+				break;
+			case "prnm":
+				PRNM_CHUNK prnm;
+				break;
+			case "band":
+				BAND_CHUNK band;
+				break;
+			case "chrd":
+				CHRD_CHUNK chrd;
+				break;
+			case "cmnd":
+				CMND_CHUNK cmnd;
+				break;
+			case "mute":
+				MUTE_CHUNK mute;
+				break;
+			default:
+				CHUNK subchunk;
+				break;
+		}
+	}
+
+	Pad(size);
+};
+
+LittleEndian();
+
+local ID id;
+local uint size;
+while(FTell()<FileSize())
+{
+	ReadBytes(id, FTell(), 4);
+	size=ReadUInt(FTell()+4);
+
+	switch(id)
+	{
+		case "RIFF":
+			LIST_CHUNK list <open=true>;
+			break;
+		default:
+			return -1;
+	}
+}
